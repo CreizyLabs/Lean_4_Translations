@@ -34,3 +34,11 @@ lean_lib «intel4004» where
 @[default_target]
 lean_lib «CrossLayerBridge» where
   roots := #[`CrossLayerBridge]
+
+@[default_target]
+lean_lib «executive_agc» where
+  roots := #[`executive_agc]
+
+@[default_target]
+lean_lib «interpreter_agc» where
+  roots := #[`interpreter_agc]
