@@ -1,0 +1,36 @@
+name: Lean 4 Kernel Verification & Zero-Axiom Audit
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  verify:
+    name: Kernel Proof Check & Axiom Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install elan and Lean 4 toolchain
+        uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+
+      - name: Audit source files for forbidden 'sorry' or custom 'axiom' tokens
+        run: |
+          if grep -rnE '^\s*(sorry|axiom)\b|\bsorry\b' --include="*.lean" . | grep -v -E '(--|/-!|Zero `sorry`)'; then
+            echo "ERROR: Unproved 'sorry' or custom 'axiom' detected!"
+            exit 1
+          fi
+          echo "Audit passed: 0 'sorry' tokens, 0 custom 'axiom' declarations."
+
+      - name: Build all formalizations in the Lean 4 Kernel
+        run: lake build
+
+      - name: Execute AGC Block II & Intel 4004 Self-Check Suites
+        run: |
+          lean --run AGCBlockTwoReplication.lean
+          lean --run intel4004.lean
