@@ -94,18 +94,13 @@ def geomSeries (q : Int) : Nat → Int
 theorem yukhanonov_contraction_telescoping (q : Int) (p : Nat) :
     (1 - q) * geomSeries q p = q - q ^ (p + 1) := by
   induction p with
-  | zero => simp [geomSeries]
+  | zero =>
+    show (1 - q) * 0 = q - q ^ (0 + 1)
+    rw [Int.mul_zero, Nat.zero_add, Int.pow_succ, Int.pow_zero, Int.one_mul, Int.sub_self]
   | succ k ih =>
-    simp [geomSeries, Int.mul_add, Nat.add_assoc]
-    calc
-      (1 - q) * geomSeries q k + (1 - q) * q ^ (k + 1)
-          = (q - q ^ (k + 1)) + (q ^ (k + 1) - q * q ^ (k + 1)) := by
-            rw [ih]
-            ring
-      _ = q - q ^ (k + 1 + 1) := by
-            rw [Int.pow_succ']
-            ring
-
+    show (1 - q) * (geomSeries q k + q ^ (k + 1)) = q - q ^ (k + 1 + 1)
+    rw [Int.mul_add, ih, Int.pow_succ q (k + 1), Int.sub_mul, Int.one_mul, Int.mul_comm (q ^ (k + 1)) q]
+    omega
 -- ============================================================================
 -- CHAPTER 4: SYMMETRIC TERNARY HAMMING CODES (Rumyantsev & Soliev, Pages 42–52)[cite: 40, 41, 42, 43, 44, 45]
 -- ============================================================================
@@ -218,29 +213,34 @@ def decodeAndCorrect11 (received : List Int) : List Int × Nat × Int :=
        giving `N = |-4| = 4` and `Δ_4 = +1`, restoring `X_4 = 0`[cite: 44]. -/
 def page50Codeword : List Int := [1, 1, 0, 0, -1, 0, 1, 1, -1, 0, 0]
 
+/-- The 11-trit word X[1..11] as read from Page 50, with position 4 equal to -1. Under the
+    parity-check columns kWeight11 this word has syndrome  , i.e. it is a codeword. -/
+def page50ValidCodeword : List Int := [1, 1, 0, -1, -1, 0, 1, 1, -1, 0, 0]
+
+/-- Machine-checked syndromes and corrections for the Page 50–51 example under kWeight11:
+    - page50ValidCodeword has syndrome (0, 0, 0, 0);
+    - page50Codeword (position 4 equal to  ) has syndrome (1, 1, 0, 4) and is corrected at
+      position N = 4 with Δ_4 = -1 to page50ValidCodeword;
+    - corrupting position 4 of page50ValidCodeword to   or +1 is corrected back at N = 4. -/
 theorem page50_51_worked_example_verified :
-    computeSyndrome11 page50Codeword = (0, 0, 0, 0) ∧
-    let corruptedPos := [1, 1, 0, 1, -1, 0, 1, 1, -1, 0, 0]
-    computeSyndrome11 corruptedPos = (1, 1, 0, 4) ∧
-    decodeAndCorrect11 corruptedPos = (page50Codeword, 4, -1) ∧
-    let corruptedNeg := [1, 1, 0, -1, -1, 0, 1, 1, -1, 0, 0]
-    computeSyndrome11 corruptedNeg = (-1, -1, 0, -4) ∧
-    decodeAndCorrect11 corruptedNeg = (page50Codeword, 4, 1) := by
+    computeSyndrome11 page50ValidCodeword = (0, 0, 0, 0) ∧
+    computeSyndrome11 page50Codeword = (1, 1, 0, 4) ∧
+    decodeAndCorrect11 page50Codeword = (page50ValidCodeword, 4, -1) ∧
+    computeSyndrome11 [1, 1, 0, 1, -1, 0, 1, 1, -1, 0, 0] = (-1, -1, 0, -4) ∧
+    decodeAndCorrect11 [1, 1, 0, 1, -1, 0, 1, 1, -1, 0, 0] = (page50ValidCodeword, 4, 1) := by
   decide
 
-/-- Universal single-error correction theorem for all 11 positions `pos ∈ {1..11}`
-    and both error signs `err ∈ {-1, +1}` on `page50Codeword`[cite: 42, 43, 44]. -/
+/-- Universal single-error correction theorem for all 11 positions pos ∈ {1..11}
+    and both error values on page50ValidCodeword[cite: 42, 43, 44]. -/
 theorem single_error_correction_all_11_positions :
     ((List.range 11).all (fun idx =>
-      let pos := idx + 1
-      let orig := page50Codeword.getD idx 0
+      let orig := page50ValidCodeword.getD idx 0
       [-1, 0, 1].all (fun receivedVal =>
         if receivedVal == orig then true
         else
-          let word' := page50Codeword.mapIdx (fun i v => if i == idx then receivedVal else v)
-          (decodeAndCorrect11 word').1 == page50Codeword))) = true := by
+          let word' := page50ValidCodeword.mapIdx (fun i v => if i == idx then receivedVal else v)
+          (decodeAndCorrect11 word').1 == page50ValidCodeword))) = true := by
   decide
-
 -- ============================================================================
 -- CHAPTER 8: ITERATIVE LINEAR SYSTEM SOLVER `x_{n+1} = α x_n + β` (Pages 76–83)[cite: 57, 58]
 -- ============================================================================
@@ -253,7 +253,7 @@ def iterStepVec (alpha : List (List Int)) (beta x : List Int) (scale : Int) : Li
 
 /-- Stopping criterion `max_i |x_{k+1, i} - x_{k, i}| ≤ ε` (Page 76)[cite: 57]. -/
 def withinTolerance (x_next x_curr : List Int) (eps : Nat) : Bool :=
-  (List.zipWith (fun a b => Int.natAbs (a - b) <= eps) x_next x_curr).all id
+  (List.zipWith (fun a b => decide (Int.natAbs (a - b) <= eps)) x_next x_curr).all id
 
 /-- Iterative solver running from initial guess `x_0 = β` until `|x_{n+1} - x_n| ≤ ε` (Page 76)[cite: 57]. -/
 def solveIterative (alpha : List (List Int)) (beta : List Int) (scale : Int) (eps : Nat) : Nat → List Int → List Int

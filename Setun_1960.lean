@@ -119,11 +119,24 @@ def isNormalizedScaled (X : Int) : Bool :=
 def halfWordToFullWordScaled (half9 : Int) : Int :=
   half9 * (3 ^ 9)
 
+theorem foldl_zero_pad (n : Nat) (acc : Int) :
+    (List.replicate n Trit.zero).foldl (fun acc t => acc * 3 + t.toInt) acc = acc * 3 ^ n := by
+  induction n generalizing acc with
+  | zero =>
+    simp
+  | succ k ih =>
+    rw [List.replicate_succ, List.foldl_cons]
+    have h : acc * 3 + Trit.zero.toInt = acc * 3 := by
+      simp [Trit.toInt]
+    rw [h, ih]
+    simp [Int.pow_succ, Int.mul_assoc, Int.mul_comm]
+
 theorem halfWord_padding_verified (trits9 : List Trit) :
     evalTritsMSB (trits9 ++ List.replicate 9 Trit.zero) =
     evalTritsMSB trits9 * (3 ^ 9) := by
-  simp [evalTritsMSB, List.foldl_append, List.replicate]
-  omega
+  unfold evalTritsMSB
+  rw [List.foldl_append]
+  exact foldl_zero_pad 9 _
 
 -- ============================================================================
 -- 3. CONTROL FLAGS ω_+ AND ω_γ (Page 231)[cite: 6]

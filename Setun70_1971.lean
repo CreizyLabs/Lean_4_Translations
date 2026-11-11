@@ -45,12 +45,13 @@ def balMod (k : Nat) (v : Int) : Int :=
 def getTrit (n : Nat) (idx1 : Nat) (v : Int) : Int :=
   let w := balMod n v
   let shift := n - idx1
-  balMod 1 (w / (3 ^ shift))
+  balMod 1 ((w - balMod shift w) / (3 ^ shift))
 
 /-- Extracts a contiguous sub-slice `a[m : s]` (1-indexed from MSB `1..n`) as a balanced integer (§3.2)[cite: 12]. -/
 def sliceTrits (n m s : Nat) (v : Int) : Int :=
   let len := s + 1 - m
-  let shifted := (balMod n v) / (3 ^ (n - s))
+  let w := balMod n v
+  let shifted := (w - balMod (n - s) w) / (3 ^ (n - s))
   balMod len shifted
 
 -- ============================================================================
@@ -227,10 +228,10 @@ def packCFrame (c1 ch ca : Int) : Int :=
 
 /-- Unpacks `(c1, ch, ca)` from a 12-trit saved frame `z[1:12]` (`S14: RETNMC`, Page 46)[cite: 16]. -/
 def unpackCFrame (frame : Int) : Int × Int × Int :=
-  let c_1_4 := frame / 81
   let ca := balMod 4 frame
-  let c1 := balMod 1 (c_1_4 / 27)
+  let c_1_4 := (frame - ca) / 81
   let ch := balMod 3 c_1_4
+  let c1 := balMod 1 ((c_1_4 - ch) / 27)
   (c1, ch, ca)
 
 /-- `IR` Interrupt Handler block (Page 48):
@@ -401,7 +402,7 @@ def execBASIC (st : State) (ko : Int) : State :=
     | 18 =>
       let dec := decodeSyllable t
       let st0 := { st with k := t }
-      if st0.c1 != 1 && dec.ka + dec.k1 + 1 > 40 then
+      if (st0.c1 != (1 : Int)) && decide (dec.ka + dec.k1 + 1 > 40) then
         st0.enterIR (-29)
       else
         let dstPage := st0.h dec.k2
@@ -629,20 +630,22 @@ def stepCycle (st : State) : State :=
         else st_k.execSPEC dec.ko
       else
         -- Reference syllable (push operand from memory onto stack)[cite: 14]
-        if st_k.c1 != 1 && st_k.pa == 13 then
+        if (st_k.c1 != (1 : Int)) && (st_k.pa == (13 : Int)) then
           st_k.enterIR (-30)
         else
           let st_inc := { st_k with pa := st_k.pa + 1 }
           st_inc.REFSYL dec
+
+end State
 
 -- ============================================================================
 -- 10. KERNEL-VERIFIED SETUN-70 ARCHITECTURAL THEOREMS[cite: 15, 16, 17, 18]
 -- ============================================================================
 
 theorem c_frame_roundtrip_verified :
-    unpackCFrame (packCFrame (-1) 4 (-13)) = (-1, 4, -13) ∧
-    unpackCFrame (packCFrame 0 (-13) 40) = (0, -13, 40) ∧
-    unpackCFrame (packCFrame 1 12 (-40)) = (1, 12, -40) := by
+    State.unpackCFrame (State.packCFrame (-1) 4 (-13)) = (-1, 4, -13) ∧
+    State.unpackCFrame (State.packCFrame 0 (-13) 40) = (0, -13, 40) ∧
+    State.unpackCFrame (State.packCFrame 1 12 (-40)) = (1, 12, -40) := by
   decide
 
 theorem user_mode_spec_triggers_w_minus_28 :
@@ -656,6 +659,7 @@ theorem macro_in_macro_mode_triggers_w_minus_28 :
     (st.execMACRO dec).w = -28 ∧ (st.execMACRO dec).c1 = 1 := by
   decide
 
+set_option maxRecDepth 100000 in
 theorem rpn_add_s_plus_t_verified :
     let st0 : State := { c1 := 1, ph := 0, pa := 2, ca := 0 }
     let st1 := (st0.setS 120).setT 300

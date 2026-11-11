@@ -75,7 +75,7 @@ def AGCState.readErasable (st : AGCState) (addr : Nat) : Word16 :=
 /-- Helper to safely write a `Word16` to E-memory. -/
 def AGCState.writeErasable (st : AGCState) (addr : Nat) (val : Word16) : AGCState :=
   if h : addr < st.erasable_memory.size then
-    { st with erasable_memory := st.erasable_memory.set ⟨addr, h⟩ val }
+    { st with erasable_memory := st.erasable_memory.set addr val h }
   else
     st
 
@@ -90,7 +90,13 @@ Looked up/verified over the finite 16-bit space.
 -/
 theorem onesComplementAdd_neg_self (x : Word16) :
     onesComplementAdd (onesComplementNegate x) x = ALL_ONES := by
-  revert x
+  have h32 : (onesComplementNegate x).zeroExtend 32 + x.zeroExtend 32 = 0xFFFF#32 := by
+    apply BitVec.eq_of_toNat_eq
+    have hx := x.isLt
+    simp [onesComplementNegate, BitVec.toNat_add, BitVec.toNat_setWidth, BitVec.toNat_not]
+    omega
+  unfold onesComplementAdd
+  simp only [h32]
   decide
 
 /-- Writing to a valid erasable memory address preserves array size. -/
@@ -101,22 +107,33 @@ theorem writeErasable_size (st : AGCState) (addr : Nat) (val : Word16) :
   · simp [Array.size_set]
   · rfl
 
-/-- Reading immediately after writing to an in-bounds address returns the written `Word16`. -/
+/-- Reading immediately after writing to an in-bounds address returns the written Word16. -/
 theorem read_write_same (st : AGCState) (addr : Nat) (val : Word16)
     (h : addr < st.erasable_memory.size) :
     (st.writeErasable addr val).readErasable addr = val := by
   unfold AGCState.writeErasable AGCState.readErasable
-  simp [h, Array.size_set, Array.getElem_set_self]
+  simp [h, Array.size_set]
 
-/-- Writing a test value and then restoring the original value yields the exact initial `AGCState`. -/
+/-- Setting an in-bounds array cell and then restoring its original value is the identity. -/
+theorem array_set_restore (a : Array Word16) (addr : Nat) (val : Word16) (h : addr < a.size)
+    (h' : addr < (a.set addr val h).size) :
+    (a.set addr val h).set addr a[addr] h' = a := by
+  apply Array.ext
+  · simp
+  · intro i h1 h2
+    by_cases e : addr = i
+    · subst e
+      simp
+    · simp [Array.getElem_set_ne, e]
+
+/-- Writing a test value and then restoring the original value yields the exact initial AGCState. -/
 theorem write_restore_id (st : AGCState) (addr : Nat) (val : Word16)
     (h : addr < st.erasable_memory.size) :
     (st.writeErasable addr val).writeErasable addr (st.readErasable addr) = st := by
   unfold AGCState.writeErasable AGCState.readErasable
-  simp [h, Array.size_set]
-  cases st
-  simp
-
+  have h2 : addr < (st.erasable_memory.set addr val h).size := by
+    simp [h]
+  simp [h, h2, array_set_restore]
 -- =========================================================================
 -- 2. ERASABLE MEMORY CHECK ROUTINE (ERASCHK)
 -- =========================================================================
@@ -184,11 +201,10 @@ theorem eraschkLoop_universal_correct (rem : Nat) (st : AGCState) (curr_addr : N
     have h_curr : curr_addr < st.erasable_memory.size := by omega
     have h_next : (curr_addr + 1) + r ≤ st.erasable_memory.size := by omega
     unfold eraschkLoop
-    rw [read_write_same st curr_addr (BitVec.ofNat 16 curr_addr) h_curr]
-    simp only [bne_self_eq_false, Bool.false_eq_true, ↓reduceIte]
-    rw [onesComplementAdd_neg_self (BitVec.ofNat 16 curr_addr)]
-    simp only [bne_self_eq_false, Bool.false_eq_true, ↓reduceIte]
-    rw [write_restore_id st curr_addr (BitVec.ofNat 16 curr_addr) h_curr]
+    have e1 := read_write_same st curr_addr (BitVec.ofNat 16 curr_addr) h_curr
+    have e2 := onesComplementAdd_neg_self (BitVec.ofNat 16 curr_addr)
+    have e3 := write_restore_id st curr_addr (BitVec.ofNat 16 curr_addr) h_curr
+    simp only [e1, e2, e3, bne_self_eq_false, Bool.false_eq_true, ↓reduceIte]
     exact ih st (curr_addr + 1) success h_next
 
 /--
@@ -213,6 +229,8 @@ Proven directly from the universal inductive theorem rather than brute-force `de
 theorem eraschk_initial_passes :
     eraschk ({} : AGCState) 0o061 0o1373 = (({} : AGCState), true) := by
   apply eraschk_passes_all_bounds
+  show 0o1373 < (Array.mkArray 2048 (0#16)).size
+  rw [Array.size_mkArray]
   decide
 
 -- =========================================================================
@@ -278,26 +296,16 @@ def cyclshft (st : AGCState) : AGCState × Bool :=
     ({ st1 with ERCOUNT := st1.ERCOUNT + 1 }, false)
   else
     (st1, true)
+/-- Every Word16 value is at most  xFFFF. -/
+theorem word16_toNat_le (x : Word16) : x.toNat ≤ 0xFFFF := by
+  have h : x.toNat < 65536 := x.isLt
+  exact Nat.le_of_lt_succ h
 
-/-- Universal proof that `cyclshft` passes for any initial `AGCState`. -/
+/-- Universal proof that cyclshft passes for any initial AGCState. -/
 theorem cyclshft_universal_passes (st : AGCState) :
     (cyclshft st).2 = true := by
-  unfold cyclshft
-  simp only
-  split
-  · next h =>
-    exfalso
-    have h_lt := (onesComplementAdd
-      (onesComplementAdd
-        (onesComplementAdd
-          (onesComplementAdd
-            (onesComplementAdd (BitVec.ofNat 16 0o25252) (BitVec.ofNat 16 0o25252 &&& BitVec.ofNat 16 0o7777))
-            (BitVec.ofNat 16 0o25252 &&& BitVec.ofNat 16 0o7777))
-          (BitVec.ofNat 16 0o25252 &&& BitVec.ofNat 16 0o7777))
-        0#16)
-      (BitVec.ofNat 16 0o52400)).isLt
-    omega
-  · rfl
+  simp only [cyclshft]
+  rw [if_neg (Nat.not_lt.mpr (word16_toNat_le _))]
 
 -- =========================================================================
 -- 6. ROPE BANK CHECKSUM VERIFICATION (ROPECHK / BNKCHK)
@@ -373,3 +381,5 @@ def main : IO Unit := do
 #eval main
 
 end AGCBlockTwo
+
+def main : IO Unit := AGCBlockTwo.main

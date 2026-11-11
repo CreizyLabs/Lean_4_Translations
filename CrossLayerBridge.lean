@@ -1,3 +1,6 @@
+import Setun_1960
+import Magnetic_Digital_Elements_1964
+
 /-!
 # Cross-Layer Unification: 1964 Magnetic Amplifier Physics to 1960 Setun ALU
 Proves that N. P. Brusentsov's 1964 dual-rail pulse-current magnetic amplifier
@@ -6,9 +9,6 @@ algebraically isomorphic to the 1960 Setun serial full-adder (`Setun_1960.lean`,
 Page 228) with zero carry-in.
 Zero `sorry`, zero custom axioms.
 -/
-
-import Setun_1960
-import Magnetic_Digital_Elements_1964
 
 namespace CrossLayerBridge
 

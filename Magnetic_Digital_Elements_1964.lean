@@ -201,8 +201,8 @@ theorem ladder_mmf_identity (Hm m L N n : Nat) :
     let M1_scaled := Hm * (2 * m + 2 * (N - 1) * L)
     let Mn_scaled := Hm * (m + 2 * (N - n) * L)
     kb_num * M1_scaled = Mn_scaled * kb_den := by
-  simp [ladderKb]
-  ring
+  simp only [ladderKb]
+  rw [Nat.mul_left_comm, ← Nat.mul_assoc]
 
 /-- Page 484 Table: Calculated vs. experimental `K_б` and `M_n` (AT) for `N = 14`, `M_1 = 4 AT`,
     at even rungs `n ∈ {2, 4, 6, 8, 10, 12}` (where `m = L` gives `K_б = (29 - 2n) / 28`,
@@ -210,13 +210,26 @@ theorem ladder_mmf_identity (Hm m L N n : Nat) :
 def tablePage484CalculatedKbPercent (n : Nat) : Nat :=
   ((13 - n) * 100 + 7) / 15
 
+/-- Values printed in the Page 484 table for even rungs 
+ ∈ {2, 4, 6, 8, 10, 12}, in percent. -/
+def tablePage484PublishedKbPercent : List Nat := [73, 60, 47, 34, 20, 7]
+
 theorem table_page484_blocking_factors_verified :
     tablePage484CalculatedKbPercent 2  = 73 ∧
     tablePage484CalculatedKbPercent 4  = 60 ∧
     tablePage484CalculatedKbPercent 6  = 47 ∧
-    tablePage484CalculatedKbPercent 8  = 34 ∧
     tablePage484CalculatedKbPercent 10 = 20 ∧
     tablePage484CalculatedKbPercent 12 = 7 := by
+  decide
+
+/-- At 
+ = 8 the exact blocking factor is 5/15 = 1/3, i.e. 33.33... percent
+    (computed value 33), while the table prints  .34: the printed entry exceeds
+    the exact value by 2/3 of a percentage point (15 * 34 - 100 * 5 = 10). -/
+theorem table_page484_rung8_printed_vs_exact :
+    tablePage484CalculatedKbPercent 8 = 33 ∧
+    tablePage484PublishedKbPercent[3]! = 34 ∧
+    15 * 34 - 100 * (13 - 8) = 10 := by
   decide
 
 -- ============================================================================
@@ -238,7 +251,10 @@ theorem chinaev_quality_nonneg (deviations : List Int) :
   | cons d ds ih =>
     simp [List.foldl]
     apply ih
-    have hd : 0 <= d * d := Int.mul_self_nonneg d
+    have hd : 0 <= d * d := by
+      rcases Int.le_total 0 d with h | h
+      · exact Int.mul_nonneg h h
+      · exact Int.mul_nonneg_of_nonpos_of_nonpos h h
     omega
 
 theorem chinaev_minimum_at_zero_deviation :
