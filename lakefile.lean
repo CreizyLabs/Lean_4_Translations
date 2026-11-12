@@ -42,3 +42,11 @@ lean_lib «executive_agc» where
 @[default_target]
 lean_lib «interpreter_agc» where
   roots := #[`interpreter_agc]
+
+@[default_target]
+lean_lib «DGESV» where
+  roots := #[`DGESV]
+
+@[default_target]
+lean_lib «TempleOS» where
+  roots := #[`TempleOS]

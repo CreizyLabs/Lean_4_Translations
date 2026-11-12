@@ -33,6 +33,8 @@ Every specification in this repository is translated directly from primary archi
 | **`Setun_Minsk22_Dushanbe_1971.lean`** | **Symmetric Ternary Hamming Codes, BVP & CPM Scheduling** (1971) | Ed. I. U. Soliev, *Вопросы технического и математического обеспечения ЭЦВМ «Сетунь» и «Минск-22»*, Tajik State University, Dushanbe, pp. 1–112 (1971). | **Ch. 1–2 (Soliev)**: TGU Setun 1965–1970 utilization reconciliation and magnetic amplifier thermal/noise thresholds ($+10^\circ\text{C}..+70^\circ\text{C}$, $20\%$ noise rejection, $80\%$ regeneration).<br>**Ch. 3 (Yukhanonov)**: Linear conjugation boundary value problem, Noether-Mikhailov index identity $l - p = 2\kappa$, and contraction mapping series.<br>**Ch. 4 (Rumyantsev & Soliev)**: Symmetric ternary Hamming codes over $\{-1, 0, +1\}$, sphere-packing bound $3^m \ge 2(m+n)+1$, syndrome locator $N = |\sigma|$, error corrector $\Delta_N = -\text{sign}(\sigma)$, and exhaustive verification of the $(11, 8)$ code across all 11 positions.<br>**Ch. 8–9 (Kurtakov)**: Fixed-point linear system solver $x_{n+1} = \alpha x_n + \beta$ and 18-trit packed Critical Path Method (CPM) scheduler ($T_i^{(0)}, T_i^{(1)}, R_{i,j}, r_{i,j}$) verified on the 10-event network graph. |
 | **`intel4004.lean`** | **Intel 4004 MCS-4 Microprocessor** (1971) | Intel Corporation, *MCS-4/40 Component Data Catalog: 4004 Single Chip 4-Bit P-Channel Microprocessor*, pp. 8-15 to 8-23 (1971). | Complete 4-bit CPU, 16 index registers ($R_0..R_{15}$ / pairs $P_0..P_7$), 4-level 12-bit address stack, `CM-RAM0..3` bank decoder (`DCL`), `SRC` latch, 8$\times$4$\times$4$\times$16 RAM main & status arrays, all 46 instructions (256-byte opcode table), $I_{DD}$ temperature/voltage model, and a kernel-proved 29-cycle (232-clock) machine-code execution suite. |
 | **`CrossLayerBridge.lean`** | **1964 Physics $\leftrightarrow$ 1960 ALU Isomorphism** | Cross-module formal bridge (`Magnetic_Digital_Elements_1964` $\to$ `Setun_1960`). | Proves (`brusentsov_1964_half_adder_eq_setun_1960_adder`) that Brusentsov's 1964 dual-rail pulse-current magnetic amplifier half-adder equations compute the exact same `(sum, carry_out)` values as the 1960 Setun serial full-adder (`Trit.fullAdder a b .zero`). |
+| **`DGESV.lean`** | **Netlib LAPACK General Linear Solver** (1992) | Netlib LAPACK 3.x, `dgesv.f`, `dgetrf.f`, `dgetf2.f`, `dgetrs.f`, `dlaswp.f`, `dtrsm.f`. | Complete zero-axiom, zero-sorry formalization of LAPACK general linear system solver $AX = B$ over exact arithmetic (`Rat` / generic `LAPACKField`). Transcribes full Fortran 77 dependency tree with explicit 1-based indexing, partial pivoting, permutation composition, triangular back-substitution, parameter validation theorems (`dgesv_illegal_n`, etc.), and singular matrix propagation. |
+| **`TempleOS.lean`** | **TempleOS Operating System Core** (2013) | Terry A. Davis, *TempleOS Version 5.03*, `Kernel/Dsk/DskStrA.HC`, `Kernel/Compress.HC`, `Compiler/`. | Complete zero-axiom formalization of TempleOS 64-bit architecture: RedSea 64-bit filesystem directory records and cluster allocators, CArcCompress LZW decompressor (`expand_buf`) with verified universal output bounds (`lzwOuterLoop_size_le`), and HolyC operator precedence parser with Pratt precedence binding. |
 
 ---
 
@@ -81,6 +83,19 @@ Setun-70 implements hardware-enforced structured programming (EDS) using a 3-sta
 * `c_frame_roundtrip_verified`: Lossless 12-trit packing and unpacking of $(c_1, c_h, c_a)$ across `IR`, `MACRO`, and `S14 (RETNMC)`.
 * `user_mode_spec_triggers_w_minus_28`: Executing a privileged `SPEC` syllable in user mode ($c_1 = -1$) traps to the interrupt handler on ROM page $c_h = 13, c_a = -13$ with cause $w = -28$.
 * `macro_in_macro_mode_triggers_w_minus_28`: Nested `MACRO` invocation when $c_1 = 0$ traps with $w = -28$.
+
+### 5. LAPACK DGESV Exact Matrix Solver & Invariant Preservation (`DGESV.lean`)
+DGESV solves general linear systems $AX = B$ using LU factorization with partial row pivoting ($P A = L U$). The formalization models the full Fortran 77 LAPACK calling stack in exact arithmetic over `Rat`:
+* `dgesv_illegal_n`, `dgesv_illegal_nrhs`, `dgesv_illegal_lda`, `dgesv_illegal_ldb`: Exact negative info parameter guards.
+* `dgesv_singular_propagates_info`: Verified propagation of singular matrix flags ($U_{k,k} = 0$) directly to the user info return.
+* `dgesv_2x2_exact_solution`: Exact solution of 2x2 systems in $\mathbb{Q}$ verified through `rfl`.
+
+### 6. TempleOS Compression Bound Verification & Kernel Semantics (`TempleOS.lean`)
+Formalizes Terry Davis's 64-bit operating system core, including the CArcCompress variable-bit LZW engine (`expand_buf`):
+* `unpackU16LE_packU16LE` & `unpackU64LE_packU64LE`: BitVec roundtrip preservation lemmas verified with `bv_decide`.
+* `lzwOuterLoop_size_le`: Proves that the decompressor output never exceeds the header's declared `expanded_size` bound:
+
+$$\forall \text{st},\; (\text{lzwOuterLoop st}).\text{out.size} \le \text{st.expanded\_size}$$
 
 ---
 
