@@ -47,3 +47,12 @@ lean_lib «LAPACK» where
 @[default_target]
 lean_lib «TempleOS» where
   roots := #[`TempleOS.TempleOS]
+
+@[default_target]
+lean_lib «ColdWarDefense» where
+  roots := #[
+    `ColdWarDefense.ImpCodeResurrection,
+    `ColdWarDefense.ImpHardware,
+    `ColdWarDefense.SageProgramming,
+    `ColdWarDefense.SkipjackKEA
+  ]
