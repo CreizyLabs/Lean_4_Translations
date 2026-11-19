@@ -8,10 +8,6 @@ require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git" @ "v4.15.0"
 
 @[default_target]
-lean_lib «AGCBlockTwoReplication» where
-  roots := #[`AGCBlockTwoReplication]
-
-@[default_target]
 lean_lib «Magnetic_Digital_Elements_1964» where
   roots := #[`Magnetic_Digital_Elements_1964]
 
@@ -36,14 +32,6 @@ lean_lib «CrossLayerBridge» where
   roots := #[`CrossLayerBridge]
 
 @[default_target]
-lean_lib «executive_agc» where
-  roots := #[`executive_agc]
-
-@[default_target]
-lean_lib «interpreter_agc» where
-  roots := #[`interpreter_agc]
-
-@[default_target]
 lean_lib «DGESV» where
   roots := #[`DGESV]
 
@@ -53,4 +41,12 @@ lean_lib «TempleOS» where
 
 @[default_target]
 lean_lib «ApolloMission» where
-  roots := #[`ApolloMission.LEM_GEOMETRY, `ApolloMission.PLANETARY_INERTIAL_ORIENTATION, `ApolloMission.THE_LUNAR_LANDING]
+  roots := #[
+    `ApolloMission.LEM_GEOMETRY,
+    `ApolloMission.PLANETARY_INERTIAL_ORIENTATION,
+    `ApolloMission.THE_LUNAR_LANDING,
+    `ApolloMission.AGCBlockTwoReplication,
+    `ApolloMission.executive_agc,
+    `ApolloMission.interpreter_agc
+  ]
+

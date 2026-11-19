@@ -32,5 +32,5 @@ jobs:
 
       - name: Execute AGC Block II & Intel 4004 Self-Check Suites
         run: |
-          lean --run AGCBlockTwoReplication.lean
+          lean --run ApolloMission/AGCBlockTwoReplication.lean
           lean --run intel4004.lean
