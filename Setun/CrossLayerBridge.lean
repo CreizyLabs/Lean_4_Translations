@@ -1,5 +1,5 @@
-import Setun_1960
-import Magnetic_Digital_Elements_1964
+import Setun.Setun_1960
+import Setun.Magnetic_Digital_Elements_1964
 
 /-!
 # Cross-Layer Unification: 1964 Magnetic Amplifier Physics to 1960 Setun ALU

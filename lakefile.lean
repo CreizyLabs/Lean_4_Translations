@@ -8,38 +8,6 @@ require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git" @ "v4.15.0"
 
 @[default_target]
-lean_lib «Magnetic_Digital_Elements_1964» where
-  roots := #[`Magnetic_Digital_Elements_1964]
-
-@[default_target]
-lean_lib «Setun_1960» where
-  roots := #[`Setun_1960]
-
-@[default_target]
-lean_lib «Setun70_1971» where
-  roots := #[`Setun70_1971]
-
-@[default_target]
-lean_lib «Setun_Minsk22_Dushanbe_1971» where
-  roots := #[`Setun_Minsk22_Dushanbe_1971]
-
-@[default_target]
-lean_lib «intel4004» where
-  roots := #[`intel4004]
-
-@[default_target]
-lean_lib «CrossLayerBridge» where
-  roots := #[`CrossLayerBridge]
-
-@[default_target]
-lean_lib «DGESV» where
-  roots := #[`DGESV]
-
-@[default_target]
-lean_lib «TempleOS» where
-  roots := #[`TempleOS]
-
-@[default_target]
 lean_lib «ApolloMission» where
   roots := #[
     `ApolloMission.LEM_GEOMETRY,
@@ -50,3 +18,32 @@ lean_lib «ApolloMission» where
     `ApolloMission.interpreter_agc
   ]
 
+@[default_target]
+lean_lib «StoryOfMel» where
+  roots := #[
+    `StoryOfMel.MelLGP30,
+    `StoryOfMel.BkjckTape,
+    `StoryOfMel.NatherStoryOfMel
+  ]
+
+@[default_target]
+lean_lib «Setun» where
+  roots := #[
+    `Setun.Setun_1960,
+    `Setun.Setun70_1971,
+    `Setun.Setun_Minsk22_Dushanbe_1971,
+    `Setun.Magnetic_Digital_Elements_1964,
+    `Setun.CrossLayerBridge
+  ]
+
+@[default_target]
+lean_lib «Intel4004» where
+  roots := #[`Intel4004.intel4004]
+
+@[default_target]
+lean_lib «LAPACK» where
+  roots := #[`LAPACK.DGESV]
+
+@[default_target]
+lean_lib «TempleOS» where
+  roots := #[`TempleOS.TempleOS]
